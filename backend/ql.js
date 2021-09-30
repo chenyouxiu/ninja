@@ -2,11 +2,11 @@
 
 const got = require('got');
 require('dotenv').config();
-//const { readFile } = require('fs/promises');
-//const path = require('path');
+const { readFile } = require('fs/promises');
+const path = require('path');
 
-//const qlDir = process.env.QL_DIR || '/ql';
-//const authFile = path.join(qlDir, 'config/auth.json');
+const qlDir = process.env.QL_DIR || '/ql';
+const authFile = path.join(qlDir, 'config/auth.json');
 
 const api = got.extend({
   prefixUrl: process.env.QL_URL || 'http://localhost:5600',
@@ -14,33 +14,21 @@ const api = got.extend({
 });
 
 async function getToken() {
-  const body = await api({
-    url: 'open/auth/token',
-    searchParams: {
-      client_id: process.env.QL_Client_ID,
-      client_secret: process.env.QL_Client_Secret,
-    },
-    headers: {
-      Accept: 'application/json',
-    },
-  }).json();
-  //const authConfig = JSON.parse(await readFile(authFile));
-  const authConfig = body.data;
-  //console.log(authConfig);
+  const authConfig = JSON.parse(await readFile(authFile));
   return authConfig.token;
 }
 
 module.exports.getEnvs = async () => {
   const token = await getToken();
   const body = await api({
-    url: 'open/envs',
+    url: 'api/envs',
     searchParams: {
       searchValue: 'JD_COOKIE',
       t: Date.now(),
     },
     headers: {
       Accept: 'application/json',
-      Authorization: `Bearer ${token}`,
+      authorization: `Bearer ${token}`,
     },
   }).json();
   return body.data;
@@ -55,7 +43,7 @@ module.exports.addEnv = async (cookie, remarks) => {
   const token = await getToken();
   const body = await api({
     method: 'post',
-    url: 'open/envs',
+    url: 'api/envs',
     params: { t: Date.now() },
     json: [{
       name: 'JD_COOKIE',
@@ -64,7 +52,7 @@ module.exports.addEnv = async (cookie, remarks) => {
     }],
     headers: {
       Accept: 'application/json',
-      Authorization: `Bearer ${token}`,
+      authorization: `Bearer ${token}`,
       'Content-Type': 'application/json;charset=UTF-8',
     },
   }).json();
@@ -75,7 +63,7 @@ module.exports.updateEnv = async (cookie, eid, remarks) => {
   const token = await getToken();
   const body = await api({
     method: 'put',
-    url: 'open/envs',
+    url: 'api/envs',
     params: { t: Date.now() },
     json: {
       name: 'JD_COOKIE',
@@ -85,7 +73,39 @@ module.exports.updateEnv = async (cookie, eid, remarks) => {
     },
     headers: {
       Accept: 'application/json',
-      Authorization: `Bearer ${token}`,
+      authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json;charset=UTF-8',
+    },
+  }).json();
+  return body;
+};
+
+module.exports.DisableCk = async (eid) => {
+  const token = await getToken();
+  const body = await api({
+    method: 'put',
+    url: 'api/envs/disable',
+    params: { t: Date.now() },	
+    body: JSON.stringify([eid]),
+    headers: {
+      Accept: 'application/json',
+      authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json;charset=UTF-8',
+    },
+  }).json();
+  return body;
+};
+
+module.exports.EnableCk = async (eid) => {
+  const token = await getToken();
+  const body = await api({
+    method: 'put',
+    url: 'api/envs/enable',
+    params: { t: Date.now() },	
+    body: JSON.stringify([eid]),
+    headers: {
+      Accept: 'application/json',
+      authorization: `Bearer ${token}`,
       'Content-Type': 'application/json;charset=UTF-8',
     },
   }).json();
@@ -96,12 +116,12 @@ module.exports.delEnv = async (eid) => {
   const token = await getToken();
   const body = await api({
     method: 'delete',
-    url: 'open/envs',
+    url: 'api/envs',
     params: { t: Date.now() },
     body: JSON.stringify([eid]),
     headers: {
       Accept: 'application/json',
-      Authorization: `Bearer ${token}`,
+      authorization: `Bearer ${token}`,
       'Content-Type': 'application/json;charset=UTF-8',
     },
   }).json();
